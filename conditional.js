@@ -114,11 +114,14 @@ $.smartScroll = function(container, selectorScrollable) {
             this.optionsFunc = {
                 body: $('body'),
                 E: $(conObj),
+                buttonClickFlag: 1,
                 dialog: '', //遮罩层
                 conditionalFilter: '', //外层DIV
                 clearButton:'',
                 bottomButton: '',
                 box: '',
+                showAllSelects: '<div class="option arrow" ><a href="javascript:void 0;">查看全部</a></div>',
+                showAllModel:'<div class="with_sub_title top46"><ul class="mod_list padding_left"></ul></div>',
                 //初始化
                 createElems: function () {
                     var O = this;
@@ -127,8 +130,9 @@ $.smartScroll = function(container, selectorScrollable) {
                     O.conditionalFilter = $('<div class="conditional-filter"><div class="sf_layer_con"></div></div>')
                     O.clearButton = $('<div id="filterClearBtn" class="J_ping s_btn hidden">初始化选项</div>')
                     O.clearButtonDisabled = $('<div id="filterClearBtnDisabled" class="J_ping s_btn disabled">初始化选项</div>')
-                    O.bottomButton = $('<div class="filterlayer_bottom_buttons"><span class="filterlayer_bottom_button bg1">取消</span><span class="filterlayer_bottom_button bg2">确认</span></div>')
-                    O.conditionalFilter.append(O.bottomButton )
+                    O.bottomButton = $('<div class="filterlayer_bottom_buttons"><span id="cancel" class="filterlayer_bottom_button bg1">取消</span><span class="filterlayer_bottom_button bg2" id="confir">确认</span></div>')
+                    O.bottomButtonSecond = $('<div  class="filterlayer_bottom_buttons hidden"><span id="cancel1" class="filterlayer_bottom_button bg1">取消</span><span class="filterlayer_bottom_button bg2" id="confir1">确认</span></div>')
+                    O.conditionalFilter.append(O.bottomButton ).append(O.bottomButtonSecond)
                     O.box.append(O.dialog).append(O.conditionalFilter)
                     O.body.append(O.box)
                     O.dialogOnClick(O.dialog)
@@ -139,11 +143,10 @@ $.smartScroll = function(container, selectorScrollable) {
                         }
                         O.dialog.trigger('click')
                     })
-                    O.bottomButton.find('.filterlayer_bottom_button:eq(0)').click(function () {O.dialog.trigger('click') })
                     O.createUl()
                     O.conditionalFilter.find('.sf_layer_con').append(O.clearButton ).append(O.clearButtonDisabled)
                     O.clearFilter()
-                    // O.setClearButtonColor()
+                    $('#cancel').click(function () {O.dialog.trigger('click')})
                 },
                 createUl: function () {
                     var O = this
@@ -156,14 +159,14 @@ $.smartScroll = function(container, selectorScrollable) {
                             '<li>' +
                             '<div class="list_inner li_line">' +
                             '<div class="big">'+settings.selectsData[i].title+'</div>' +
-                            '<div class="right"><span class="words_10">'+settings.selectsData[i].data[0].text+'</span></div>' +
+                            '<div class="right"><span class="words_10" value="'+settings.selectsData[i].data[0].value+'">'+settings.selectsData[i].data[0].text+'</span></div>' +
                             '</div>' +
                             '</li>' +
                             '<div class="tags_selection" id="'+settings.selectsData[i].id+'option'+'"></div>' +
                             '</ul>'
                         O.conditionalFilter.find('.sf_layer_con').append(ul)
                         var objId = settings.selectsData[i].id + 'option'
-                        O.createUlMods(objId,ulModeData)
+                        O.createUlMods(objId,ulModeData,settings.selectsData[i].title)
                     }
                     O.optionOnclick()
                     if(settings.hasDate){
@@ -171,26 +174,125 @@ $.smartScroll = function(container, selectorScrollable) {
                         O.onInputDate()
                     }
                 },
-                createUlMods: function (objId,ulModeData) {
+                createUlMods: function (objId,ulModeData,title) {
                     var O = this
                     O.hasData()
-                    var aArr = []
-                    for(var r = 0; r < ulModeData.length; r++){
+                    var aArr = [], ulModeDataLength = ulModeData.length
+                    console.log(ulModeDataLength)
+                    for(var r = 0; r < ulModeDataLength; r++){
                         var option = ''
                         if(r === 0){
                             option  = '<div class="option selected" ><a href="javascript:void 0;" value="'+ulModeData[r].value+'">'+ulModeData[r].text+'</a></div>'
-                        }else {
+                        }else if(ulModeDataLength > 9 && r === 8){
+                            option = O.showAllSelects
+                            aArr.push(option)
+                            O.createShowAllContent(objId,ulModeData,title)
+                            break
+                        }
+                        else {
                             option  = '<div class="option" ><a href="javascript:void 0;" value="'+ulModeData[r].value+'">'+ulModeData[r].text+'</a></div>'
                         }
                         aArr.push(option)
                     }
                     $('#'+objId).append(aArr.join(''))
+                    O.showAllSelectsOnClick(objId)
+                },
+                //大于9时在另一处展示
+                createShowAllContent: function (objId,ulModeData,title) {
+                    var O = this
+                    var arr = []
+                    $('#'+objId).parent().children('.with_sub_title ').remove()
+                    $('#'+objId).parent().append('<div class="with_sub_title zIndex444 hidden"><div class="sf_layer_sub_title"><strong>已选'+title+'：</strong><span class="words_10"></span></div></div>')
+                    $('#'+objId).next().append(O.showAllModel)
+                    for(var i=0;i<ulModeData.length;i++){
+                        var li = '<li class="check_li"><div class="list_inner li_line"><div class="big" value="'+ulModeData[i].value+'">'+ulModeData[i].text+'</div></div></li>'
+                        arr.push(li)
+                    }
+                    $('#'+objId).next().find('.mod_list').append(arr.join(''))
+                },
+                //展示全部
+                showAllSelectsOnClick: function (objId) {
+                    var O = this
+                    $('#'+objId+'> .arrow').click(function () {
+                        $(this).parent().next('.with_sub_title ').removeClass('hidden')
+                        var value = $(this).parents('.mod_list').find('.right').children('.words_10').attr('value')
+                        $('.zIndex444').not('.hidden').find('.big').each(function () {
+                            var big = this
+                            if($(big).attr('value') == value){
+                                $(big).parents('.check_li').addClass('checked')
+                                $(big).parents('.top46').prev().find('.words_10').text($(big).text()).attr('value',$(big).attr('value'))
+                            }
+                        })
+                        $('.filterlayer_bottom_buttons').eq(0).addClass('hidden').siblings('.filterlayer_bottom_buttons').removeClass('hidden')
+                        O.cancelSubTitle($(this))
+                        O.confirmSubTitle($(this))
+                        O.checkLiOnClick()
+                    })
+                },
+                //查看全部后的取消按钮
+                cancelSubTitle: function (dom) {
+                    $('#cancel1').click(function () {
+                        $(dom).parent().next('.with_sub_title ').addClass('hidden')
+                            .find('.words_10').text('').end().find('.check_li').removeClass('checked')
+                        $('.filterlayer_bottom_buttons').eq(1).addClass('hidden').siblings('.filterlayer_bottom_buttons').removeClass('hidden')
+                    })
+                },
+                //查看全部后的确定按钮
+                confirmSubTitle: function (callback) {
+                    var O = this
+                    $('#confir1').click(function () {
+                        if(callback instanceof jQuery) {
+                            $(callback).parent().next('.with_sub_title ').addClass('hidden')
+                            var obj = $(callback).parent().next('.with_sub_title ').find('.check_li ').filter('.checked')
+                            var text = obj.find('.big').text()
+                            var value = obj.find('.big').attr('value')
+                            $(callback).parent().prev().find('.words_10').text(text).attr('value', value)
+                            $(callback).siblings('.option').not('.arrow').children().each(function () {
+                                if ($(this).attr('value') === value) {
+                                    $(this).parent().not('.arrow').addClass('selected').siblings().removeClass('selected')
+                                    O.setClearButtonColor()
+                                    return false
+                                } else {
+                                    $(callback).siblings('.option').removeClass('selected')
+                                }
+                            })
+                            O.setClearButtonColor()
+                        }
+                        // else if(typeof callback == 'function'){
+                        //     callback()
+                        // }else {
+                        //     return
+                        // }
+                    })
+                    // var aa = 55
+                    // return callback(aa)
+                },
+                //确定回调方法
+                confirmSubTitleForDo: function (callback) {
+                    var O = this
+                    $('#confir1').click(function () {
+                        if(typeof callback != 'function') return
+                        var thisJson = {}
+                        var thisValue = $('.zIndex444').not('.hidden').find('.checked').find('.big').attr('value')
+                        var thisId = $('.zIndex444').not('.hidden').parent().attr('id')
+                        thisJson[thisId] = thisValue
+                        var valueJson = O.getAllValues()
+                        var data = $.extend(valueJson, thisJson)
+                        return callback(data)
+                    })
+                },
+                //checkLi点击事件
+                checkLiOnClick: function () {
+                    $('.check_li').click(function () {
+                        $(this).addClass('checked').siblings().removeClass('checked')
+                        $(this).parents('.top46').siblings('.sf_layer_sub_title').find('.words_10').text($(this).find('.big').text()).attr('value',$(this).find('.big').attr('value'))
+                    })
                 },
                 //更新筛选项内容
-                reloadUlMod: function (ModId,data) {
+                reloadUlMod: function (ModId,data,title) {
                     var O = this
                     $('#'+ModId+'option').empty()
-                    O.createUlMods(ModId+'option',data)
+                    O.createUlMods(ModId+'option',data,title)
                     O.optionOnclick()
                     O.watchText()
                 },
@@ -203,7 +305,13 @@ $.smartScroll = function(container, selectorScrollable) {
                     }else {
                         $('#'+ModId+'option').find('a').each(function () {
                             if($(this).attr('value')===value){
-                                $(this).parent('.option').addClass('selected').siblings().removeClass('selected').parent('.tags_selection').prev('li').find('.words_10').text($(this).text())
+                                $(this).parent('.option').addClass('selected').siblings().removeClass('selected').parent('.tags_selection').prev('li').find('.words_10').text($(this).text()).attr('value',$(this).attr('value'))
+                            }else {
+                                $(this).parent('.option').removeClass('selected').parent().next().find('.big').each(function () {
+                                    if($(this).attr('value')===value){
+                                        $(this).parents('.zIndex444 ').siblings('li').find('.words_10').text($(this).text()).attr('value',$(this).attr('value'))
+                                    }
+                                })
                             }
                         })
                     }
@@ -217,9 +325,10 @@ $.smartScroll = function(container, selectorScrollable) {
                     }else {
                         selector = '#'+itemId+'option .option'
                     }
-                    $(selector).click(function () {
+                    $(selector).not('.arrow ').click(function () {
                         var ownText =  $(this).children().text()
-                        $(this).addClass('selected').siblings().removeClass('selected').parent('.tags_selection').prev('li').find('.words_10').text(ownText)
+                        var ownValue =  $(this).children().attr('value')
+                        $(this).addClass('selected').siblings().removeClass('selected').parent('.tags_selection').prev('li').find('.words_10').text(ownText).attr('value',ownValue)
                         O.setClearButtonColor()
                         if(callback == undefined || typeof callback != 'function') return
                         callback()
@@ -281,7 +390,7 @@ $.smartScroll = function(container, selectorScrollable) {
                     var valueJson = {}
                     $('.option').each(function () {
                         if($(this).hasClass('selected')){
-                            $(this).parent('.tags_selection').prev('li').find('.words_10').text($(this).text())
+                            $(this).parent('.tags_selection').prev('li').find('.words_10').text($(this).text()).attr('value',$(this).find('a').attr('value'))
                             var fId = $(this).parents('ul.mod_list').attr('id')
                             valueJson[fId] = $(this).find('a').attr('value')
                         }
@@ -291,15 +400,19 @@ $.smartScroll = function(container, selectorScrollable) {
                 //确定方法回调函数
                 confirmButton: function (callback) {
                     var O = this;
-                    O.bottomButton.find('.bg2').click(function () {
+                    O.bottomButton.find('.bg2').not('.showAll').click(function () {
                         if(typeof callback != 'function') return
                         callback()
                         O.dialog.trigger('click')
                     })
                 },
                 getAllValues: function () {
-                    var O = this
-                    var valueJson = O.watchText()
+                    var valueJson = {}
+                    $('.right>.words_10').not('.dataSpan').each(function () {
+                        var textValue = $(this).attr('value')
+                        var textId = $(this).parents('ul').attr('id')
+                        valueJson[textId] = textValue
+                    })
                     if(settings.hasDate){
                         var value = $('#' + settings.setDateID).val()
                         valueJson[settings.setDateID] = value
@@ -315,6 +428,12 @@ $.smartScroll = function(container, selectorScrollable) {
                         var year = data.getFullYear()
                         var month = data.getMonth() + 1
                         var day =  data.getDate()-1
+                        if(month<10){
+                            month = '0'+month
+                        }
+                        if(day<10){
+                            day = '0'+day
+                        }
                         nowData = year + '-' + month + '-' + day
                     }
                     settings.setDateTime = nowData
@@ -328,7 +447,7 @@ $.smartScroll = function(container, selectorScrollable) {
                         '<span class="iconfont icon-riqi" style="color: #E93B3D;font-size: 24px"></span>' +
                         '</a>' +
                         '</div>' +
-                        '<div class="right"><span class="words_10">'+nowData+'</span></div>' +
+                        '<div class="right"><span class="words_10 dataSpan">'+nowData+'</span></div>' +
                         '</div>' +
                         '</li>' +
                         '</ul>'
