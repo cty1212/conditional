@@ -41,14 +41,20 @@ header标签后放入
   --
   $('.btnSx')[0].optionsFunc.selectUlModItem('xh','gb004')
   
-  reloadUlMod(筛选项ID,data值)  重新渲染筛选项 应用场景：级联
+  reloadUlMod(筛选项ID,data值,title)  重新渲染筛选项 应用场景：级联
   --
-  $('.btnSx')[0].optionsFunc.reloadUlMod('model',[{value:'1',text:'apple2211S 64G'},{value:'1',text:'ap22ple2'}])
+  $('.btnSx')[0].optionsFunc.reloadUlMod('model',[{value:'1',text:'apple2211S 64G'},{value:'1',text:'ap22ple2'}],‘机型’)
   
   optionOnclick(筛选项ID,callback) 点击筛选项时的回调函数 应用场景：级联
   --
    $('.btnSx')[0].optionsFunc.optionOnclick('model', function () {
   //dosomething
+  })
+  
+  confirmSubTitleForDo(callback)  点击查看全部后的确定按钮回调函数 应用场景：级联 （第二次提交后新增）
+  --
+  $('.btnSx')[0].optionsFunc.confirmButton(function (data) {
+    console.log(data) //data为函数自带参数 值为选中的筛选项值集合
   })
   
   confirmButton(callback)  确定按钮回调函数 应用场景：ajax查询
